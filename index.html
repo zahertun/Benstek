@@ -4,11 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BenS'Tek Finance</title>
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#2563eb">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+    </style>
 </head>
 <body class="bg-slate-100 pb-10">
 
@@ -22,16 +24,13 @@
     <div class="max-w-5xl mx-auto p-2 md:p-4 space-y-4">
         
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            
             <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-blue-600 flex flex-col justify-center items-center h-40">
                 <h2 class="text-gray-500 text-xs font-bold uppercase">Solde en Caisse</h2>
                 <p id="soldeTotal" class="text-3xl font-black text-slate-800 mt-1">0.00 TND</p>
             </div>
 
             <div class="md:col-span-2 bg-white p-4 rounded-xl shadow-sm h-40 flex items-center justify-center">
-                <div class="w-full h-full relative">
-                    <canvas id="statsChart"></canvas>
-                </div>
+                <canvas id="statsChart"></canvas>
             </div>
         </div>
 
@@ -42,7 +41,7 @@
                     <i class="fas fa-plus-circle mr-2"></i>Nouvelle Opération
                 </h3>
                 <form id="transactionForm" class="grid grid-cols-2 gap-3">
-                    <select id="type" class="col-span-2 p-2 border rounded-lg bg-slate-50 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                    <select id="type" class="col-span-2 p-2 border rounded-lg bg-slate-50 text-sm outline-none">
                         <option value="entree">🟢 Entrée (Vente/Réparation)</option>
                         <option value="sortie">🔴 Sortie (Achat/Frais)</option>
                     </select>
@@ -61,7 +60,7 @@
                 </form>
             </div>
 
-            <div class="bg-white p-5 rounded-xl shadow-sm border flex flex-col h-[300px] md:h-auto">
+            <div class="bg-white p-5 rounded-xl shadow-sm border flex flex-col max-h-[400px]">
                 <h3 class="text-sm font-bold mb-3 flex items-center text-slate-700">
                     <i class="fas fa-history mr-2"></i>Derniers mouvements
                 </h3>
@@ -72,17 +71,14 @@
                     </table>
                 </div>
             </div>
-
         </div>
     </div>
 
     <script type="module">
-    // Importation des modules Firebase
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, query, orderBy } 
-    from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // --- COPIE TES CLÉS CI-DESSOUS ---
+ // --- COPIE TES CLÉS CI-DESSOUS ---
     const firebaseConfig = {
         apiKey: "AIzaSyCCkFdl-rN3yueZ7L89HrblXBoXIYc4CSU",
         authDomain: "benstek-finance.firebaseapp.com",
@@ -91,111 +87,82 @@
         messagingSenderId: "972183439685",
         appId: "1:972183439685:web:5166beaa8b4608fe7e562c"
     };
-    // --------------------------------
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const transactionsRef = collection(db, "transactions");
+        let chartInstance = null;
 
-    // Initialisation
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const transactionsRef = collection(db, "transactions");
-    let chartInstance = null;
-
-    // ÉCOUTE EN TEMPS RÉEL (La synchronisation PC/Mobile se passe ici !)
-    const q = query(transactionsRef, orderBy("date", "desc"));
-    onSnapshot(q, (snapshot) => {
-        const transactions = [];
-        snapshot.forEach((doc) => {
-            transactions.push({ id: doc.id, ...doc.data() });
+        // Synchronisation en temps réel
+        const q = query(transactionsRef, orderBy("date", "desc"));
+        onSnapshot(q, (snapshot) => {
+            const trans = [];
+            snapshot.forEach((doc) => trans.push({ id: doc.id, ...doc.data() }));
+            majInterface(trans);
         });
-        mettreAJourUI(transactions);
-    });
 
-    // AJOUTER UNE TRANSACTION
-    document.getElementById('transactionForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const type = document.getElementById('type').value;
-        const categorie = document.getElementById('categorie').value;
-        const montant = parseFloat(document.getElementById('montant').value);
-
-        try {
-            await addDoc(transactionsRef, {
-                type,
-                categorie,
-                montant,
-                date: new Date().toISOString()
-            });
-            document.getElementById('transactionForm').reset();
-        } catch (e) {
-            alert("Erreur lors de l'ajout : " + e.message);
-        }
-    });
-
-    // SUPPRIMER UNE TRANSACTION
-    window.supprimerTransaction = async (id) => {
-        if(confirm("Supprimer ce mouvement ?")) {
-            await deleteDoc(doc(db, "transactions", id));
-        }
-    };
-
-    // MISE À JOUR DE L'INTERFACE
-    function mettreAJourUI(transactions) {
-        // Solde
-        const solde = transactions.reduce((acc, curr) => {
-            return curr.type === 'entree' ? acc + curr.montant : acc - curr.montant;
-        }, 0);
-        document.getElementById('soldeTotal').textContent = `${solde.toFixed(2)} TND`;
-
-        // Liste
-        const tbody = document.getElementById('historiqueListe');
-        tbody.innerHTML = '';
-        
-        transactions.slice(0, 10).forEach(t => {
-            const dateFormatee = new Date(t.date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-            const couleur = t.type === 'entree' ? 'text-green-600' : 'text-red-600';
-            const signe = t.type === 'entree' ? '+' : '-';
-
-             list.innerHTML = trans.slice(0, 15).map(t => `
-            <tr class="hover:bg-slate-50 transition-colors">
-                <td class="py-3 text-xs text-slate-500">${new Date(t.date).toLocaleDateString('fr-TN', {day:'2-digit', month:'2-digit'})}</td>
-                <td class="py-3 font-semibold text-slate-700">${t.categorie}</td>
-                <td class="py-3 text-right font-black ${t.type === 'entree' ? 'text-green-600' : 'text-red-600'}">
-                    ${t.type === 'entree' ? '+' : '-'}${t.montant.toFixed(2)}
-                </td>
-                <td class="py-3 text-right pl-2">
-                    <button onclick="supprimer('${t.id}')" class="text-slate-300 hover:text-red-500"><i class="fas fa-times-circle"></i></button>
-                </td>
-            </tr>
-        `).join('');
+        // Ajouter une transaction
+        document.getElementById('transactionForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                await addDoc(transactionsRef, {
+                    type: document.getElementById('type').value,
+                    categorie: document.getElementById('categorie').value,
+                    montant: parseFloat(document.getElementById('montant').value),
+                    date: new Date().toISOString()
+                });
+                document.getElementById('transactionForm').reset();
+            } catch (err) { alert("Erreur Firebase : " + err.message); }
         });
-        mettreAJourGraphique(transactions);
-    }
 
-    function mettreAJourGraphique(transactions) {
-        const ctx = document.getElementById('statsChart').getContext('2d');
-        const inTotal = transactions.filter(t => t.type === 'entree').reduce((s, t) => s + t.montant, 0);
-        const outTotal = transactions.filter(t => t.type === 'sortie').reduce((s, t) => s + t.montant, 0);
-
-        if(chartInstance) chartInstance.destroy();
-        chartInstance = new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: ['Ventes/Réparations', 'Dépenses'],
-                datasets: [{ data: [inTotal, outTotal], backgroundColor: ['#22c55e', '#ef4444'] }]
-            },
-             options: { 
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { position: 'right', labels: { boxWidth: 12, font: { size: 10 } } }
+        // Supprimer une transaction
+        window.supprimer = async (id) => {
+            if(confirm("Supprimer ce mouvement ?")) {
+                await deleteDoc(doc(db, "transactions", id));
             }
+        };
+
+        // Mise à jour du visuel
+        function majInterface(trans) {
+            const solde = trans.reduce((acc, curr) => curr.type === 'entree' ? acc + curr.montant : acc - curr.montant, 0);
+            document.getElementById('soldeTotal').textContent = `${solde.toFixed(2)} TND`;
+
+            const list = document.getElementById('historiqueListe');
+            list.innerHTML = trans.slice(0, 20).map(t => `
+                <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="py-3 text-[10px] text-slate-400 w-12">${new Date(t.date).toLocaleDateString('fr-TN', {day:'2-digit', month:'2-digit'})}</td>
+                    <td class="py-3 font-semibold text-slate-700">${t.categorie}</td>
+                    <td class="py-3 text-right font-black ${t.type === 'entree' ? 'text-green-600' : 'text-red-600'}">
+                        ${t.type === 'entree' ? '+' : '-'}${t.montant.toFixed(2)}
+                    </td>
+                    <td class="py-3 text-right pl-2">
+                        <button onclick="supprimer('${t.id}')" class="text-slate-300 hover:text-red-500"><i class="fas fa-times-circle"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+
+            majGraph(trans);
         }
-        });
-    }
-</script>
 
-   
+        function majGraph(trans) {
+            const ctx = document.getElementById('statsChart').getContext('2d');
+            const inT = trans.filter(t => t.type === 'entree').reduce((s, t) => s + t.montant, 0);
+            const outT = trans.filter(t => t.type === 'sortie').reduce((s, t) => s + t.montant, 0);
 
-    <style>
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
-    </style>
+            if(chartInstance) chartInstance.destroy();
+            chartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Revenus', 'Dépenses'],
+                    datasets: [{ data: [inT, outT], backgroundColor: ['#22c55e', '#ef4444'], borderWidth: 0 }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } }
+                    }
+                }
+            });
+        }
+    </script>
 </body>
 </html>
