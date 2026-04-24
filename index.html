@@ -3,71 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BenS'Tek Finance</title>
+    <title>BenS'Tek Finance Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     </style>
 </head>
-<body class="bg-slate-100 pb-10">
+<body class="bg-slate-50 pb-10">
 
-    <nav class="bg-blue-700 text-white p-3 shadow-md sticky top-0 z-50">
+    <nav class="bg-blue-800 text-white p-4 shadow-lg sticky top-0 z-50">
         <div class="max-w-5xl mx-auto flex justify-between items-center">
-            <h1 class="text-lg font-bold truncate"><i class="fas fa-store mr-2"></i>BenS'Tek Finance</h1>
-            <div id="status" class="text-xs bg-blue-800 px-2 py-1 rounded">Synchro OK</div>
+            <h1 class="text-lg font-bold"><i class="fas fa-calculator mr-2"></i>BenS'Tek Caisse</h1>
+            <div id="connexion-status" class="text-[10px] bg-yellow-500 text-black px-2 py-1 rounded font-bold uppercase">Connexion...</div>
         </div>
     </nav>
 
-    <div class="max-w-5xl mx-auto p-2 md:p-4 space-y-4">
+    <div class="max-w-5xl mx-auto p-3 space-y-4">
         
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-blue-600 flex flex-col justify-center items-center h-40">
-                <h2 class="text-gray-500 text-xs font-bold uppercase">Solde en Caisse</h2>
-                <p id="soldeTotal" class="text-3xl font-black text-slate-800 mt-1">0.00 TND</p>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center justify-center h-44">
+                <span class="text-slate-400 text-xs font-bold uppercase tracking-wider">Solde Total</span>
+                <p id="soldeTotal" class="text-4xl font-black text-blue-700 mt-2">0.00 TND</p>
             </div>
 
-            <div class="md:col-span-2 bg-white p-4 rounded-xl shadow-sm h-40 flex items-center justify-center">
+            <div class="md:col-span-2 bg-white p-4 rounded-2xl shadow-sm border border-slate-200 h-44 flex items-center justify-center">
                 <canvas id="statsChart"></canvas>
             </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            
-            <div class="bg-white p-5 rounded-xl shadow-sm border">
-                <h3 class="text-sm font-bold mb-3 flex items-center text-blue-700">
-                    <i class="fas fa-plus-circle mr-2"></i>Nouvelle Opération
-                </h3>
-                <form id="transactionForm" class="grid grid-cols-2 gap-3">
-                    <select id="type" class="col-span-2 p-2 border rounded-lg bg-slate-50 text-sm outline-none">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <h3 class="text-sm font-bold mb-4 text-slate-700 uppercase">Nouvelle Opération</h3>
+                <form id="transactionForm" class="space-y-3">
+                    <select id="type" class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
                         <option value="entree">🟢 Entrée (Vente/Réparation)</option>
                         <option value="sortie">🔴 Sortie (Achat/Frais)</option>
                     </select>
-                    <select id="categorie" class="p-2 border rounded-lg bg-slate-50 text-sm outline-none">
-                        <option value="Vente Smartphone">📱 Smartphone</option>
-                        <option value="Vente PC">💻 PC / Laptop</option>
-                        <option value="Réparation">🛠️ Réparation</option>
-                        <option value="Accessoires">🔌 Accessoires</option>
-                        <option value="Consoles">🎮 Consoles</option>
-                        <option value="Frais">💸 Frais/Loyer</option>
-                    </select>
-                    <input type="number" id="montant" placeholder="Montant" step="0.1" required class="p-2 border rounded-lg bg-slate-50 text-sm font-bold outline-none">
-                    <button type="submit" class="col-span-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-all shadow-lg active:scale-95">
-                        VALIDER L'OPÉRATION
+                    <div class="grid grid-cols-2 gap-3">
+                        <select id="categorie" class="p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm outline-none">
+                            <option value="Smartphone">📱 Smartphone</option>
+                            <option value="PC">💻 PC</option>
+                            <option value="Réparation">🛠️ Réparation</option>
+                            <option value="Accessoires">🔌 Accessoires</option>
+                            <option value="Autre">📦 Autre</option>
+                        </select>
+                        <input type="number" id="montant" placeholder="Montant" step="0.1" required class="p-3 border border-slate-200 rounded-xl bg-slate-50 text-sm font-bold outline-none">
+                    </div>
+                    <button type="submit" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-4 rounded-xl shadow-lg transition-all active:scale-95">
+                        ENREGISTRER
                     </button>
                 </form>
             </div>
 
-            <div class="bg-white p-5 rounded-xl shadow-sm border flex flex-col max-h-[400px]">
-                <h3 class="text-sm font-bold mb-3 flex items-center text-slate-700">
-                    <i class="fas fa-history mr-2"></i>Derniers mouvements
-                </h3>
-                <div class="overflow-y-auto flex-grow pr-1 custom-scrollbar">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col h-[350px]">
+                <h3 class="text-sm font-bold mb-4 text-slate-700 uppercase">Historique Récent</h3>
+                <div class="overflow-y-auto flex-grow custom-scrollbar">
                     <table class="w-full text-sm">
-                        <tbody id="historiqueListe" class="divide-y divide-slate-100">
-                            </tbody>
+                        <tbody id="historiqueListe" class="divide-y divide-slate-100 text-slate-600">
+                            <tr><td class="py-10 text-center text-slate-400">Chargement des données...</td></tr>
+                        </tbody>
                     </table>
                 </div>
             </div>
@@ -78,7 +75,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
- // --- COPIE TES CLÉS CI-DESSOUS ---
+        // --- COPIE TES CLÉS CI-DESSOUS ---
     const firebaseConfig = {
         apiKey: "AIzaSyCCkFdl-rN3yueZ7L89HrblXBoXIYc4CSU",
         authDomain: "benstek-finance.firebaseapp.com",
@@ -87,59 +84,83 @@
         messagingSenderId: "972183439685",
         appId: "1:972183439685:web:5166beaa8b4608fe7e562c"
     };
+
+        // Init
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const transactionsRef = collection(db, "transactions");
         let chartInstance = null;
 
-        // Synchronisation en temps réel
+        // Statut de connexion
+        const statusEl = document.getElementById('connexion-status');
+
+        // Lecture en temps réel
         const q = query(transactionsRef, orderBy("date", "desc"));
         onSnapshot(q, (snapshot) => {
+            statusEl.textContent = "Connecté ✅";
+            statusEl.className = "text-[10px] bg-green-500 text-white px-2 py-1 rounded font-bold uppercase";
+            
             const trans = [];
             snapshot.forEach((doc) => trans.push({ id: doc.id, ...doc.data() }));
+            
             majInterface(trans);
+        }, (error) => {
+            statusEl.textContent = "Erreur ❌";
+            statusEl.className = "text-[10px] bg-red-500 text-white px-2 py-1 rounded font-bold uppercase";
+            console.error(error);
         });
 
-        // Ajouter une transaction
+        // Formulaire
         document.getElementById('transactionForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            try {
-                await addDoc(transactionsRef, {
-                    type: document.getElementById('type').value,
-                    categorie: document.getElementById('categorie').value,
-                    montant: parseFloat(document.getElementById('montant').value),
-                    date: new Date().toISOString()
-                });
-                document.getElementById('transactionForm').reset();
-            } catch (err) { alert("Erreur Firebase : " + err.message); }
+            const btn = e.target.querySelector('button');
+            btn.disabled = true;
+            btn.textContent = "ENCOURS...";
+
+            await addDoc(transactionsRef, {
+                type: document.getElementById('type').value,
+                categorie: document.getElementById('categorie').value,
+                montant: parseFloat(document.getElementById('montant').value),
+                date: new Date().toISOString()
+            });
+
+            e.target.reset();
+            btn.disabled = false;
+            btn.textContent = "ENREGISTRER";
         });
 
-        // Supprimer une transaction
+        // Suppression
         window.supprimer = async (id) => {
             if(confirm("Supprimer ce mouvement ?")) {
                 await deleteDoc(doc(db, "transactions", id));
             }
         };
 
-        // Mise à jour du visuel
         function majInterface(trans) {
+            // Calcul Solde
             const solde = trans.reduce((acc, curr) => curr.type === 'entree' ? acc + curr.montant : acc - curr.montant, 0);
             document.getElementById('soldeTotal').textContent = `${solde.toFixed(2)} TND`;
 
+            // Remplissage Tableau
             const list = document.getElementById('historiqueListe');
-            list.innerHTML = trans.slice(0, 20).map(t => `
-                <tr class="hover:bg-slate-50 transition-colors">
-                    <td class="py-3 text-[10px] text-slate-400 w-12">${new Date(t.date).toLocaleDateString('fr-TN', {day:'2-digit', month:'2-digit'})}</td>
-                    <td class="py-3 font-semibold text-slate-700">${t.categorie}</td>
-                    <td class="py-3 text-right font-black ${t.type === 'entree' ? 'text-green-600' : 'text-red-600'}">
-                        ${t.type === 'entree' ? '+' : '-'}${t.montant.toFixed(2)}
-                    </td>
-                    <td class="py-3 text-right pl-2">
-                        <button onclick="supprimer('${t.id}')" class="text-slate-300 hover:text-red-500"><i class="fas fa-times-circle"></i></button>
-                    </td>
-                </tr>
-            `).join('');
-
+            if(trans.length === 0) {
+                list.innerHTML = '<tr><td class="py-10 text-center text-slate-400 italic">Aucune opération enregistrée.</td></tr>';
+            } else {
+                list.innerHTML = trans.slice(0, 30).map(t => `
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="py-4 text-[10px] font-bold text-slate-300 w-10 uppercase">${new Date(t.date).toLocaleDateString('fr-TN', {day:'2-digit', month:'2-digit'})}</td>
+                        <td class="py-4 font-bold text-slate-700">${t.categorie}</td>
+                        <td class="py-4 text-right font-black ${t.type === 'entree' ? 'text-green-600' : 'text-red-500'}">
+                            ${t.type === 'entree' ? '+' : '-'}${t.montant.toFixed(2)}
+                        </td>
+                        <td class="py-4 text-right pl-3">
+                            <button onclick="supprimer('${t.id}')" class="text-slate-200 hover:text-red-400 transition-colors">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
             majGraph(trans);
         }
 
@@ -149,16 +170,23 @@
             const outT = trans.filter(t => t.type === 'sortie').reduce((s, t) => s + t.montant, 0);
 
             if(chartInstance) chartInstance.destroy();
+            
+            // Si pas de données, on affiche un cercle gris
+            const dataVal = (inT === 0 && outT === 0) ? [1] : [inT, outT];
+            const dataCol = (inT === 0 && outT === 0) ? ['#f1f5f9'] : ['#1d4ed8', '#ef4444'];
+            const labels = (inT === 0 && outT === 0) ? ['Aucune donnée'] : ['Revenus', 'Dépenses'];
+
             chartInstance = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
-                    labels: ['Revenus', 'Dépenses'],
-                    datasets: [{ data: [inT, outT], backgroundColor: ['#22c55e', '#ef4444'], borderWidth: 0 }]
+                    labels: labels,
+                    datasets: [{ data: dataVal, backgroundColor: dataCol, borderWidth: 0, hoverOffset: 4 }]
                 },
                 options: {
                     maintainAspectRatio: false,
+                    cutout: '70%',
                     plugins: {
-                        legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } }
+                        legend: { position: 'right', labels: { usePointStyle: true, font: { size: 10, weight: 'bold' } } }
                     }
                 }
             });
