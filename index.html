@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BenS'Tek Finance</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2563eb">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-slate-50 text-slate-800 pb-20 md:pb-0">
+
+    <nav class="bg-blue-600 text-white p-4 shadow-md flex justify-between items-center">
+        <h1 class="text-xl font-bold"><i class="fas fa-store mr-2"></i>Boutique BenS'Tek</h1>
+        <span class="text-sm bg-blue-800 px-3 py-1 rounded-full">Caisse</span>
+    </nav>
+
+    <div class="max-w-4xl mx-auto p-4 space-y-6">
+        
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex flex-col items-center justify-center">
+            <h2 class="text-gray-500 text-sm uppercase tracking-wide font-semibold">Solde de la caisse</h2>
+            <p id="soldeTotal" class="text-4xl font-bold text-blue-600 mt-2">0.00 TND</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                <h3 class="text-lg font-semibold mb-4 border-b pb-2">Nouveau Mouvement</h3>
+                <form id="transactionForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Type</label>
+                        <select id="type" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg bg-gray-50">
+                            <option value="entree">Entrée (Vente, Réparation)</option>
+                            <option value="sortie">Sortie (Achat stock, Frais)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Catégorie</label>
+                        <select id="categorie" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg bg-gray-50">
+                            <option value="Vente PC">Vente PC</option>
+                            <option value="Vente Smartphone">Vente Smartphone</option>
+                            <option value="Vente Accessoires">Vente Accessoires</option>
+                            <option value="Réparation">Réparation</option>
+                            <option value="Dépenses Boutique">Dépenses Boutique</option>
+                            <option value="Autre">Autre</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Montant (TND)</label>
+                        <input type="number" id="montant" step="0.1" required class="mt-1 block w-full p-2 border border-gray-300 rounded-lg bg-gray-50">
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 text-white font-semibold py-2 rounded-lg hover:bg-blue-700 transition">
+                        Ajouter
+                    </button>
+                </form>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                <h3 class="text-lg font-semibold mb-4 border-b pb-2">Statistiques de la semaine</h3>
+                <canvas id="statsChart" class="w-full h-48"></canvas>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+            <h3 class="text-lg font-semibold mb-4 border-b pb-2">Historique récent</h3>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50 text-gray-600 text-sm">
+                            <th class="p-3 border-b">Date</th>
+                            <th class="p-3 border-b">Catégorie</th>
+                            <th class="p-3 border-b text-right">Montant</th>
+                            <th class="p-3 border-b text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historiqueListe">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+<script type="module">
+    // Importation des modules Firebase
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, query, orderBy } 
+    from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    // --- COPIE TES CLÉS CI-DESSOUS ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyCCkFdl-rN3yueZ7L89HrblXBoXIYc4CSU",
+        authDomain: "benstek-finance.firebaseapp.com",
+        projectId: "benstek-finance",
+        storageBucket: "benstek-finance.firebasestorage.app",
+        messagingSenderId: "972183439685",
+        appId: "1:972183439685:web:5166beaa8b4608fe7e562c"
+    };
+    // --------------------------------
+
+    // Initialisation
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const transactionsRef = collection(db, "transactions");
+    let chartInstance = null;
+
+    // ÉCOUTE EN TEMPS RÉEL (La synchronisation PC/Mobile se passe ici !)
+    const q = query(transactionsRef, orderBy("date", "desc"));
+    onSnapshot(q, (snapshot) => {
+        const transactions = [];
+        snapshot.forEach((doc) => {
+            transactions.push({ id: doc.id, ...doc.data() });
+        });
+        mettreAJourUI(transactions);
+    });
+
+    // AJOUTER UNE TRANSACTION
+    document.getElementById('transactionForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const type = document.getElementById('type').value;
+        const categorie = document.getElementById('categorie').value;
+        const montant = parseFloat(document.getElementById('montant').value);
+
+        try {
+            await addDoc(transactionsRef, {
+                type,
+                categorie,
+                montant,
+                date: new Date().toISOString()
+            });
+            document.getElementById('transactionForm').reset();
+        } catch (e) {
+            alert("Erreur lors de l'ajout : " + e.message);
+        }
+    });
+
+    // SUPPRIMER UNE TRANSACTION
+    window.supprimerTransaction = async (id) => {
+        if(confirm("Supprimer ce mouvement ?")) {
+            await deleteDoc(doc(db, "transactions", id));
+        }
+    };
+
+    // MISE À JOUR DE L'INTERFACE
+    function mettreAJourUI(transactions) {
+        // Solde
+        const solde = transactions.reduce((acc, curr) => {
+            return curr.type === 'entree' ? acc + curr.montant : acc - curr.montant;
+        }, 0);
+        document.getElementById('soldeTotal').textContent = `${solde.toFixed(2)} TND`;
+
+        // Liste
+        const tbody = document.getElementById('historiqueListe');
+        tbody.innerHTML = '';
+        
+        transactions.slice(0, 10).forEach(t => {
+            const dateFormatee = new Date(t.date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+            const couleur = t.type === 'entree' ? 'text-green-600' : 'text-red-600';
+            const signe = t.type === 'entree' ? '+' : '-';
+
+            tbody.innerHTML += `
+                <tr>
+                    <td class="p-3 border-b text-sm">${dateFormatee}</td>
+                    <td class="p-3 border-b text-sm font-medium">${t.categorie}</td>
+                    <td class="p-3 border-b text-right font-bold ${couleur}">${signe}${t.montant.toFixed(2)}</td>
+                    <td class="p-3 border-b text-center">
+                        <button onclick="supprimerTransaction('${t.id}')" class="text-red-400 hover:text-red-600">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>`;
+        });
+        mettreAJourGraphique(transactions);
+    }
+
+    function mettreAJourGraphique(transactions) {
+        const ctx = document.getElementById('statsChart').getContext('2d');
+        const inTotal = transactions.filter(t => t.type === 'entree').reduce((s, t) => s + t.montant, 0);
+        const outTotal = transactions.filter(t => t.type === 'sortie').reduce((s, t) => s + t.montant, 0);
+
+        if(chartInstance) chartInstance.destroy();
+        chartInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Ventes/Réparations', 'Dépenses'],
+                datasets: [{ data: [inTotal, outTotal], backgroundColor: ['#22c55e', '#ef4444'] }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+    }
+</script>
+</body>
+</html>
